@@ -99,7 +99,7 @@
 
 <div class="deck">
   <iframe class="slide active" src="atriumIntro/index.html" title="The Atrium"></iframe>
-  <iframe class="slide" src="pizzaChallenge/index.html" title="Pizza Challenge" data-steps></iframe>
+  <iframe class="slide" src="pizzaChallenge/index.html" title="Pizza Challenge" allow="autoplay"></iframe>
   <iframe class="slide" src="electronicsToday/index.html" title="Today: Cardboard Pinball" data-steps></iframe>
   <!-- Hidden from deck: <iframe class="slide" src="electricityRules/index.html" title="Rules of Electricity" data-steps></iframe> -->
   <!-- Hidden from deck: <iframe class="slide" src="breadboard/index.html" title="The Breadboard" data-steps></iframe> -->
@@ -145,6 +145,7 @@
   function goTo(i) {
     if (i < 0 || i >= slides.length) return;
     const from = current;
+    slides[current].contentWindow.postMessage({ deck: 'leave' }, '*');
     slides[current].classList.remove('active');
     dots[current].classList.remove('active');
     current = i;
