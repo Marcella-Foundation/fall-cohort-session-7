@@ -527,6 +527,154 @@
   const MAX = items.length;
   let step = 0;
 
+  // ---------- sound ----------
+  // Silent until the slide is actually on screen (the deck preloads every slide).
+  let ac, master, bus, sound = false;
+  function audio() {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createDynamicsCompressor();
+      master.connect(ac.destination);
+    }
+    if (ac.state === 'suspended') ac.resume();
+    return ac;
+  }
+
+  // Each play gets its own bus so a replay or leaving the slide cuts anything still scheduled.
+  function freshBus() {
+    hush();
+    if (!sound) return null;
+    const c = audio();
+    bus = c.createGain();
+    bus.connect(master);
+    return bus;
+  }
+  function hush() {
+    if (!bus) return;
+    const b = bus;
+    bus = null;
+    b.gain.setTargetAtTime(0, ac.currentTime, 0.02);
+    setTimeout(() => b.disconnect(), 200);
+  }
+  const out = () => (sound ? bus || freshBus() : null);
+
+  let noiseCache;
+  function noise() {
+    if (!noiseCache) {
+      noiseCache = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+      const d = noiseCache.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return noiseCache;
+  }
+
+  // A pitched blip: f0 sweeps to f1 over len, with a fast attack and decay.
+  function tone(o, at, { type = 'sine', f0, f1 = f0, len, vol }) {
+    const s = ac.currentTime + at;
+    const osc = ac.createOscillator();
+    const g = ac.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, s);
+    if (f1 !== f0) osc.frequency.exponentialRampToValueAtTime(f1, s + len);
+    g.gain.setValueAtTime(0, s);
+    g.gain.linearRampToValueAtTime(vol, s + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, s + len);
+    osc.connect(g).connect(o);
+    osc.start(s); osc.stop(s + len + 0.02);
+  }
+
+  // A burst of filtered noise; the filter can sweep from f0 to f1 Hz.
+  function hiss(o, at, { type = 'bandpass', f0, f1 = f0, q = 1, len, vol, attack = 0.005 }) {
+    const s = ac.currentTime + at;
+    const src = ac.createBufferSource();
+    src.buffer = noise();
+    src.loop = true;
+    const filt = ac.createBiquadFilter();
+    filt.type = type;
+    filt.Q.value = q;
+    filt.frequency.setValueAtTime(f0, s);
+    if (f1 !== f0) filt.frequency.exponentialRampToValueAtTime(f1, s + len);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, s);
+    g.gain.linearRampToValueAtTime(vol, s + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, s + len);
+    src.connect(filt).connect(g).connect(o);
+    src.start(s); src.stop(s + len + 0.02);
+  }
+
+  // Pentatonic steps so the letters climb as a little tune.
+  const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26];
+  const note = (n) => 523.25 * Math.pow(2, PENTA[n % PENTA.length] / 12);
+
+  const SFX = {
+    // Plunger: spring release, then the ball whooshes up.
+    launch(o) {
+      hiss(o, 0, { f0: 1200, q: 2, len: 0.06, vol: 0.5 });
+      tone(o, 0, { type: 'triangle', f0: 90, f1: 420, len: 0.18, vol: 0.35 });
+      hiss(o, 0.02, { f0: 400, f1: 2600, q: 1.5, len: 0.45, vol: 0.18, attack: 0.15 });
+    },
+    // Ball drops onto the left pad.
+    land(o, at = 0) {
+      tone(o, at, { f0: 170, f1: 55, len: 0.18, vol: 0.6 });
+      hiss(o, at, { f0: 2500, q: 1, len: 0.04, vol: 0.25 });
+    },
+    // Steel ball rolling along the rail for `len` seconds.
+    roll(o, at, len) {
+      const s = ac.currentTime + at;
+      const src = ac.createBufferSource();
+      src.buffer = noise();
+      src.loop = true;
+      const lp = ac.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 500;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(0.22, s + 0.08);
+      g.gain.setValueAtTime(0.22, s + len - 0.1);
+      g.gain.linearRampToValueAtTime(0, s + len);
+      // rattle
+      const lfo = ac.createOscillator();
+      const amt = ac.createGain();
+      lfo.frequency.value = 23;
+      amt.gain.value = 0.08;
+      lfo.connect(amt).connect(g.gain);
+      src.connect(lp).connect(g).connect(o);
+      src.start(s); src.stop(s + len + 0.05);
+      lfo.start(s); lfo.stop(s + len + 0.05);
+    },
+    // A letter buzzes on like a neon tube.
+    letter(o, at, i) {
+      const f = note(i);
+      tone(o, at, { type: 'square', f0: f, len: 0.05, vol: 0.06 });
+      tone(o, at + 0.06, { type: 'triangle', f0: f, len: 0.35, vol: 0.22 });
+      tone(o, at + 0.06, { f0: f * 2, len: 0.2, vol: 0.06 });
+    },
+    // Big bumper hit + score bells.
+    bumper(o) {
+      tone(o, 0, { f0: 120, f1: 38, len: 0.45, vol: 0.9 });
+      tone(o, 0, { type: 'square', f0: 950, f1: 260, len: 0.12, vol: 0.18 });
+      hiss(o, 0, { type: 'highpass', f0: 1800, len: 0.25, vol: 0.35 });
+      for (let i = 0; i < 8; i++) {
+        tone(o, 0.12 + i * 0.085, { type: 'triangle', f0: i % 2 ? 1568 : 1318.5, len: 0.25, vol: 0.16 });
+      }
+    },
+    // Ball smacks the side wall on the way out.
+    wall(o) {
+      tone(o, 0, { f0: 320, f1: 140, len: 0.09, vol: 0.3 });
+      hiss(o, 0, { f0: 3000, q: 2, len: 0.03, vol: 0.15 });
+    },
+    // Marquee chase: a quick run up the letters.
+    chase(o, n) {
+      for (let i = 0; i < n; i++) tone(o, i * 0.07, { type: 'triangle', f0: note(i + 3), len: 0.18, vol: 0.07 });
+    },
+    // A requirement card slides in.
+    item(o, i) {
+      tone(o, 0, { type: 'triangle', f0: note(i + 2), len: 0.4, vol: 0.18 });
+      tone(o, 0.07, { type: 'triangle', f0: note(i + 4), len: 0.5, vol: 0.12 });
+    },
+  };
+  const sfx = (name, ...args) => { const o = out(); if (o) SFX[name](o, ...args); };
+
   // ---------- pinball ----------
   const table = document.getElementById('table');
   const ctx = table.getContext('2d');
@@ -614,7 +762,7 @@
       const dt = t - last; last = t;
       vy += 0.0032 * dt;
       x += vx * dt; y += vy * dt;
-      if (x > innerWidth - BALL) { x = innerWidth - BALL; vx = -vx * 0.75; }
+      if (x > innerWidth - BALL) { x = innerWidth - BALL; vx = -vx * 0.75; sfx('wall'); }
       return y > innerHeight + 40 ? null : [x, y];
     });
   }
@@ -627,6 +775,7 @@
       body.classList.remove('chase');
       void body.offsetWidth;
       body.classList.add('chase');
+      sfx('chase', WORD.length);
       chase();
     }, 5000 + Math.random() * 4000);
   }
@@ -639,12 +788,21 @@
     void body.offsetWidth; // restart CSS animations
     body.classList.add('playing'); // rolling and letter flicker are delayed 0.5s in CSS
     launch(500);
+    const o = freshBus();
+    if (o) {
+      SFX.launch(o);
+      SFX.land(o, 0.5);
+      SFX.roll(o, 0.5, dur);
+      // ping as each letter hits the bright peak of its flicker (15% into 0.55s)
+      [...WORD].forEach((_, i) => SFX.letter(o, 0.5 + i * PER_LETTER + 0.08, i));
+    }
     // ball lands on the left pad just as it starts rolling
     startTimer = setTimeout(() => bump('.pad.l'), 500);
     litTimer = setTimeout(() => {
       body.classList.remove('playing');
       body.classList.add('lit', 'fresh');
       bump('.pad.r');
+      sfx('bumper');
       ricochet();
       body.classList.remove('jolt');
       void body.offsetWidth;
@@ -657,6 +815,7 @@
     clearTimeout(litTimer);
     clearTimeout(startTimer);
     clearTimeout(chaseTimer);
+    hush();
     flight = null;
     body.classList.remove('playing', 'fresh', 'chase');
     body.classList.add('lit');
@@ -678,18 +837,21 @@
     step = n;
     if (step > 0) showLit();
     render();
+    if (dir > 0 && step > 0) sfx('item', step - 1);
   }
 
-  document.getElementById('replay').addEventListener('click', play);
+  document.getElementById('replay').addEventListener('click', () => { sound = true; play(); });
 
   window.addEventListener('message', (e) => {
     const d = e.data || {};
     if (d.deck === 'step') go(d.dir);
     if (d.deck === 'enter') {
+      sound = true;
       step = d.at === 'end' ? MAX : 0;
       if (step === 0) play(); else showLit();
       render();
     }
+    if (d.deck === 'leave') { sound = false; showLit(); }
   });
 
   document.addEventListener('keydown', (e) => {
