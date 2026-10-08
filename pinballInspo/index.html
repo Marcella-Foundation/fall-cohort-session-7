@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pinball Inspiration</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #1a1b2e;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+
+  body::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='48' viewBox='0 0 28 48'%3E%3Cpath d='M14 0 L28 8 L28 24 L14 32 L0 24 L0 8 Z M14 32 L14 48' fill='none' stroke='%23ffffff' stroke-opacity='0.04' stroke-width='1'/%3E%3C/svg%3E");
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1.5vh, 0.9rem);
+    width: min(94vw, calc((100vh - 15rem) * 1.6 + 2rem), 1400px);
+    padding: 2vh 0;
+  }
+
+  .top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .eyebrow {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: clamp(0.8rem, 1.4vw, 1rem);
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .eyebrow b { color: #ffd24a; }
+  .count {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: clamp(0.8rem, 1.3vw, 0.95rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #0e0f1c;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+  }
+  .layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+  }
+  .layer.on { opacity: 1; }
+  .layer canvas, .layer iframe, .layer img, .layer video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+  .layer img, .layer video { object-fit: contain; background: #0e0f1c; }
+  .layer img.kb { animation: kenburns var(--d, 7s) ease-in-out forwards; }
+  @keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.08); } }
+  /* YouTube: crop the black bars / chrome a little and block clicks so the slide stays a slide */
+  .layer iframe { pointer-events: none; transform: scale(1.02); }
+
+  .progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 4px;
+    width: 100%;
+    background: linear-gradient(90deg, #ffaa28, #ffd24a);
+    box-shadow: 0 0 12px rgba(255, 210, 74, 0.7);
+    transform-origin: left;
+    transform: scaleX(0);
+    z-index: 3;
+  }
+
+  .info {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.7rem, 1.6vw, 1.2rem);
+    min-height: 4.2rem;
+    transition: opacity 0.35s ease;
+  }
+  .info.out { opacity: 0; }
+  .chip {
+    flex: 0 0 auto;
+    padding: 0.35rem 0.85rem;
+    border-radius: 50px;
+    background: rgba(255, 210, 74, 0.14);
+    border: 1px solid rgba(255, 210, 74, 0.45);
+    color: #ffd24a;
+    font-size: clamp(0.7rem, 1.1vw, 0.85rem);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .title {
+    color: #ffffff;
+    font-size: clamp(1.1rem, 2.3vw, 1.75rem);
+    font-weight: 900;
+    line-height: 1.2;
+  }
+  .sub {
+    margin-top: 0.2rem;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: clamp(0.8rem, 1.3vw, 1rem);
+    line-height: 1.35;
+  }
+  .sub b { color: #7ee8cf; font-weight: 700; }
+  .credit {
+    margin-top: 0.15rem;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: clamp(0.65rem, 0.95vw, 0.75rem);
+  }
+
+  @media (max-width: 700px) {
+    .info { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="content">
+  <div class="top">
+    <div class="eyebrow">Pinball <b>inspiration</b> — launchers, features, ideas</div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="stage" id="stage" title="Click for the next one">
+    <div class="layer" id="layerA"></div>
+    <div class="layer" id="layerB"></div>
+    <div class="progress" id="progress"></div>
+  </div>
+
+  <div class="info" id="info">
+    <div class="chip" id="chip"></div>
+    <div>
+      <div class="title" id="title"></div>
+      <div class="sub" id="sub"></div>
+      <div class="credit" id="credit"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ================= drawing kit (scenes draw on an 800×500 board) =================
+  const W = 800, H = 500;
+  const CARD = '#c9a27a', CARD_D = '#8b6a48', CARD_L = '#dcbb92', INK = '#3a2614';
+  const ACC = '#ffd24a', RUB = '#e2553f', DOWEL = '#e8cfa3';
+
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const clamp01 = (k) => Math.max(0, Math.min(1, k));
+  const ease = (k) => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+  const seg = (t, a, b) => clamp01((t - a) / (b - a));
+
+  // Piecewise-linear path through [time, x, y] waypoints.
+  function path(t, pts) {
+    if (t <= pts[0][0]) return [pts[0][1], pts[0][2]];
+    for (let i = 1; i < pts.length; i++) {
+      if (t <= pts[i][0]) {
+        const [t0, x0, y0] = pts[i - 1], [t1, x1, y1] = pts[i];
+        const k = (t - t0) / (t1 - t0);
+        return [lerp(x0, x1, k), lerp(y0, y1, k)];
+      }
+    }
+    const l = pts[pts.length - 1];
+    return [l[1], l[2]];
+  }
+
+  function playfield(g) {
+    g.fillStyle = CARD;
+    g.fillRect(0, 0, W, H);
+    // corrugation
+    g.strokeStyle = 'rgba(90, 60, 30, 0.08)';
+    g.lineWidth = 2;
+    for (let x = 0; x < W; x += 14) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+    const v = g.createRadialGradient(W / 2, H / 2, 150, W / 2, H / 2, 520);
+    v.addColorStop(0, 'rgba(0,0,0,0)');
+    v.addColorStop(1, 'rgba(40,20,0,0.35)');
+    g.fillStyle = v;
+    g.fillRect(0, 0, W, H);
+  }
+
+  function ball(g, x, y, a = 1, r = 14) {
+    g.save();
+    g.globalAlpha = a;
+    g.fillStyle = 'rgba(0,0,0,0.25)';
+    g.beginPath(); g.ellipse(x + 4, y + 6, r, r * 0.8, 0, 0, Math.PI * 2); g.fill();
+    const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+    gr.addColorStop(0, '#ffffff');
+    gr.addColorStop(0.22, '#dfe4ec');
+    gr.addColorStop(0.62, '#8a93a3');
+    gr.addColorStop(1, '#2e3442');
+    g.fillStyle = gr;
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    g.restore();
+  }
+
+  function line(g, x1, y1, x2, y2, color = CARD_D, w = 10) {
+    g.strokeStyle = color;
+    g.lineWidth = w;
+    g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+  }
+
+  function post(g, x, y, r = 9) {
+    g.fillStyle = 'rgba(0,0,0,0.25)';
+    g.beginPath(); g.arc(x + 3, y + 4, r, 0, Math.PI * 2); g.fill();
+    g.fillStyle = DOWEL;
+    g.strokeStyle = CARD_D;
+    g.lineWidth = 3;
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.stroke();
+  }
+
+  function rrect(g, x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  // Dark label pill; `on` lights it up when that part is doing the work.
+  function tag(g, text, x, y, on = false, align = 'center') {
+    g.font = '700 19px Inter, sans-serif';
+    const w = g.measureText(text).width + 26, h = 34;
+    const x0 = align === 'left' ? x : align === 'right' ? x - w : x - w / 2;
+    g.save();
+    if (on) { g.shadowColor = 'rgba(255, 210, 74, 0.9)'; g.shadowBlur = 18; }
+    g.fillStyle = on ? ACC : 'rgba(26, 27, 46, 0.88)';
+    rrect(g, x0, y - h / 2, w, h, h / 2);
+    g.fill();
+    g.restore();
+    g.fillStyle = on ? '#1a1b2e' : '#ffffff';
+    g.textAlign = 'left';
+    g.textBaseline = 'middle';
+    g.fillText(text, x0 + 13, y + 1);
+  }
+
+  function pop(g, text, x, y, k) {
+    if (k <= 0 || k >= 1) return;
+    g.save();
+    g.globalAlpha = 1 - k;
+    g.font = '900 30px Inter, sans-serif';
+    g.textAlign = 'center';
+    g.fillStyle = ACC;
+    g.shadowColor = 'rgba(255, 170, 40, 0.9)';
+    g.shadowBlur = 14;
+    g.lineWidth = 5;
+    g.strokeStyle = '#1a1b2e';
+    g.strokeText(text, x, y - k * 60);
+    g.fillText(text, x, y - k * 60);
+    g.restore();
+  }
+
+  function glow(g, x, y, r, a) {
+    if (a <= 0) return;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(255, 230, 120, ${0.9 * a})`);
+    gr.addColorStop(1, 'rgba(255, 210, 74, 0)');
+    g.fillStyle = gr;
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  }
+
+  function spring(g, x, y0, y1, w = 26, coils = 9) {
+    g.strokeStyle = '#b8c0cc';
+    g.lineWidth = 4;
+    g.lineJoin = 'round';
+    g.beginPath();
+    g.moveTo(x, y0);
+    for (let i = 1; i <= coils * 2; i++) {
+      const y = lerp(y0, y1, i / (coils * 2 + 1));
+      g.lineTo(x + (i % 2 ? w / 2 : -w / 2), y);
+    }
+    g.lineTo(x, y1);
+    g.stroke();
+  }
+
+  function scoreBox(g, n, x = 640, y = 22) {
+    g.fillStyle = '#111';
+    rrect(g, x, y, 140, 44, 8);
+    g.fill();
+    g.font = '900 26px "Courier New", monospace';
+    g.fillStyle = ACC;
+    g.shadowColor = ACC;
+    g.shadowBlur = 10;
+    g.textAlign = 'right';
+    g.textBaseline = 'middle';
+    g.fillText(String(n).padStart(7, '0'), x + 128, y + 23);
+    g.shadowBlur = 0;
+  }
+
+  // ================= mechanism scenes =================
+  // Each: { period (s), draw(g, T, t) } — T is time within the loop, t is total time on screen.
+  const SCENES = {
+    plunger: {
+      period: 3.2,
+      draw(g, T) {
+        playfield(g);
+        const lx = 520, rx = 590, cx = (lx + rx) / 2;
+        // lane walls, curving into the playfield at the top
+        g.strokeStyle = CARD_D; g.lineWidth = 12; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(rx, 360); g.lineTo(rx, 140); g.quadraticCurveTo(rx, 40, 480, 40); g.lineTo(150, 40); g.stroke();
+        g.beginPath(); g.moveTo(lx, 330); g.lineTo(lx, 170); g.stroke();
+        const pull = T < 0.3 ? 0 : T < 1.4 ? ease(seg(T, 0.3, 1.4)) : T < 1.5 ? 1 : 1 - seg(T, 1.5, 1.56);
+        const plate = 250 + 60 * pull, bracket = 350;
+        spring(g, cx, plate + 4, bracket);
+        line(g, cx, plate, cx, plate + 125, '#9aa3b0', 6); // rod
+        g.fillStyle = '#5b6270'; g.fillRect(lx + 6, bracket, rx - lx - 12, 10); // bracket
+        g.fillStyle = '#9aa3b0'; g.fillRect(cx - 24, plate - 4, 48, 8); // tip
+        g.fillStyle = RUB; rrect(g, cx - 28, plate + 112, 56, 22, 8); g.fill(); // knob
+        // ball
+        let bx = cx, by = plate - 18, a = 1;
+        if (T >= 1.5) {
+          const f = T - 1.5, s = 1100 * f - 250 * f * f; // fired up the lane, then around the curve
+          const straight = (plate - 18) - 130, r = 75, arc = r * Math.PI / 2;
+          if (s < straight) by = plate - 18 - s;
+          else if (s < straight + arc) { const th = (s - straight) / r; bx = 480 + r * Math.cos(th); by = 130 - r * Math.sin(th); }
+          else { bx = 480 - (s - straight - arc); by = 55; }
+          if (T > 2.6) { bx = cx; by = 250 - 18; a = seg(T, 2.6, 3.0); }
+        }
+        ball(g, bx, by, a);
+        tag(g, 'Pull the knob', cx - 50, plate + 123, pull > 0 && T < 1.5, 'right');
+        tag(g, 'Spring squishes = stored energy', lx - 20, (plate + bracket) / 2, pull > 0.5 && T < 1.5, 'right');
+        tag(g, 'Let go → ball launches!', 300, 110, T >= 1.5 && T < 2.4);
+      },
+    },
+
+    rubberBand: {
+      period: 3.2,
+      draw(g, T) {
+        playfield(g);
+        const cx = 400;
+        g.strokeStyle = CARD_D; g.lineWidth = 12; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(cx - 60, 330); g.lineTo(cx - 60, 30); g.stroke();
+        g.beginPath(); g.moveTo(cx + 60, 330); g.lineTo(cx + 60, 30); g.stroke();
+        const pull = T < 0.3 ? 0 : T < 1.4 ? ease(seg(T, 0.3, 1.4)) : 1;
+        let tabY = 360 + 80 * pull;
+        if (T >= 1.5) { const f = T - 1.5; tabY = 360 + 80 * Math.exp(-14 * f) * Math.cos(26 * f); }
+        const p1 = [cx - 80, 360], p2 = [cx + 80, 360];
+        g.strokeStyle = RUB; g.lineWidth = 6;
+        g.beginPath(); g.moveTo(...p1); g.lineTo(cx, tabY); g.lineTo(...p2); g.stroke();
+        post(g, ...p1); post(g, ...p2);
+        g.fillStyle = CARD_D; rrect(g, cx - 22, tabY - 4, 44, 26, 6); g.fill();
+        g.fillStyle = CARD_L; rrect(g, cx - 18, tabY, 36, 18, 4); g.fill();
+        let by = tabY - 18, a = 1;
+        if (T >= 1.5) {
+          const f = T - 1.5;
+          by = 440 - 18 - 1300 * f + 300 * f * f;
+          if (T > 2.5) { by = 360 - 18; a = seg(T, 2.5, 2.9); }
+        }
+        ball(g, cx, by, a);
+        tag(g, 'Rubber band', p2[0] + 24, 360, pull > 0 && T < 1.5, 'left');
+        tag(g, 'Pull the tab back', cx + 40, 470, pull > 0 && T < 1.5, 'left');
+        tag(g, 'SNAP!', cx + 90, 180, T >= 1.5 && T < 2.2, 'left');
+        tag(g, 'Pencils or dowels as posts', p1[0] - 24, 360, false, 'right');
+      },
+    },
+
+    flipper: {
+      period: 3,
+      draw(g, T) {
+        playfield(g);
+        const px = 300, py = 320, L = 160;
+        const rest = 28 * Math.PI / 180, up = -24 * Math.PI / 180;
+        const k = T < 0.85 ? 0 : T < 0.95 ? seg(T, 0.85, 0.95) : T < 1.6 ? 1 : 1 - seg(T, 1.6, 1.85);
+        const a = lerp(rest, up, k);
+        const dir = [Math.cos(a), Math.sin(a)];
+        // inlane guide
+        line(g, 120, 160, px - 20, py - 30, CARD_D, 12);
+        // push rod from the side button to the flipper's back arm
+        const arm = [px - 40 * dir[0], py - 40 * dir[1]];
+        const press = 14 * k;
+        line(g, 50 + press, 400, arm[0], arm[1], DOWEL, 8);
+        g.fillStyle = RUB; rrect(g, 16 + press, 380, 40, 40, 8); g.fill();
+        g.fillStyle = CARD_D; g.fillRect(0, 300, 18, 200); // side wall
+        // return rubber band
+        g.strokeStyle = RUB; g.lineWidth = 4;
+        g.beginPath(); g.moveTo(arm[0], arm[1]); g.lineTo(210, 470); g.stroke();
+        post(g, 210, 470, 7);
+        // flipper body
+        const nx = -dir[1], ny = dir[0];
+        g.fillStyle = '#f4f1ea';
+        g.strokeStyle = RUB; g.lineWidth = 6;
+        g.beginPath();
+        g.moveTo(px + nx * 20, py + ny * 20);
+        g.lineTo(px + dir[0] * L + nx * 9, py + dir[1] * L + ny * 9);
+        g.arc(px + dir[0] * L, py + dir[1] * L, 9, a + Math.PI / 2, a - Math.PI / 2, true);
+        g.lineTo(px - nx * 20, py - ny * 20);
+        g.arc(px, py, 20, a - Math.PI / 2, a + Math.PI / 2, true);
+        g.closePath();
+        g.fill(); g.stroke();
+        g.fillStyle = '#5b6270'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill();
+        // ball drops onto the flipper and gets smacked away
+        const d = 115, cdir = [Math.cos(rest), Math.sin(rest)], cn = [Math.sin(rest), -Math.cos(rest)];
+        const c = [px + cdir[0] * d + cn[0] * 25, py + cdir[1] * d + cn[1] * 25];
+        let b = c, al = 1;
+        if (T < 0.9) { const f = seg(T, 0.1, 0.9); b = [c[0], lerp(-20, c[1], f * f)]; al = T < 0.1 ? 0 : 1; }
+        else if (T < 1.7) { const f = seg(T, 0.9, 1.7); b = [lerp(c[0], 60, f), lerp(c[1], -60, f) ]; }
+        else al = 0;
+        ball(g, b[0], b[1], al);
+        tag(g, 'Push button', 30, 455, k > 0 && T < 1.6, 'left');
+        tag(g, 'Pivot: brad or dowel', px + 30, py + 70, false, 'left');
+        tag(g, 'Rubber band pulls it back', 250, 488 - 20, T > 1.6 && T < 2, 'left');
+      },
+    },
+
+    slingshot: {
+      period: 3,
+      draw(g, T) {
+        playfield(g);
+        const A = [240, 110], B = [370, 400], C = [240, 400];
+        const len = Math.hypot(B[0] - A[0], B[1] - A[1]);
+        const u = [(B[0] - A[0]) / len, (B[1] - A[1]) / len];
+        const n = [u[1], -u[0]]; // points away from the triangle (toward the ball)
+        const M = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+        const hit = 1.0;
+        let bulge = 0;
+        if (T >= hit && T < hit + 0.1) bulge = -16 * Math.sin(Math.PI * seg(T, hit, hit + 0.1) / 2);
+        else if (T >= hit + 0.1) { const f = T - hit - 0.1; bulge = -16 * Math.exp(-10 * f) * Math.cos(30 * f); }
+        g.fillStyle = CARD_D;
+        g.beginPath(); g.moveTo(...A); g.lineTo(...B); g.lineTo(...C); g.closePath(); g.fill();
+        g.strokeStyle = RUB; g.lineWidth = 7;
+        g.beginPath(); g.moveTo(...A);
+        g.quadraticCurveTo(M[0] + n[0] * bulge * 2, M[1] + n[1] * bulge * 2, ...B);
+        g.stroke();
+        [A, B, C].forEach((p) => post(g, ...p));
+        const contact = [M[0] + n[0] * 22, M[1] + n[1] * 22];
+        const start = [720, 40];
+        const din = [contact[0] - start[0], contact[1] - start[1]];
+        const dl = Math.hypot(...din); din[0] /= dl; din[1] /= dl;
+        const dot = din[0] * n[0] + din[1] * n[1];
+        const r = [din[0] - 2 * dot * n[0], din[1] - 2 * dot * n[1]];
+        let b, al = 1;
+        if (T < hit) b = [lerp(start[0], contact[0], T / hit), lerp(start[1], contact[1], T / hit)];
+        else if (T < hit + 0.1) b = [contact[0] + n[0] * bulge, contact[1] + n[1] * bulge];
+        else { const f = T - hit - 0.1; b = [contact[0] + r[0] * 900 * f, contact[1] + r[1] * 900 * f]; }
+        if (T > 2.2) al = 0;
+        ball(g, b[0], b[1], al);
+        pop(g, '+10', contact[0] + 40, contact[1], seg(T, hit + 0.1, hit + 0.9));
+        tag(g, 'Ball stretches the band…', 470, 380, T >= hit - 0.1 && T < hit + 0.12, 'left');
+        tag(g, '…band kicks it away!', 470, 425, T >= hit + 0.12 && T < 2, 'left');
+        tag(g, 'Three posts + one rubber band', 240, 460);
+      },
+    },
+
+    popBumper: {
+      period: 3.8,
+      draw(g, T, t) {
+        playfield(g);
+        const c = [400, 250], R = 55;
+        const hits = [0.7, 2.6];
+        const on = (h) => (T >= h ? Math.exp(-(T - h) * 5) : 0);
+        const f = Math.max(on(hits[0]), on(hits[1]));
+        const at = (deg) => [c[0] + 70 * Math.cos(deg * Math.PI / 180), c[1] + 70 * Math.sin(deg * Math.PI / 180)];
+        const pts = [[0, 60, 80], [0.7, ...at(195)], [1.3, 70, 430], [2.1, 730, 440], [2.6, ...at(25)], [3.1, 730, 70], [3.8, 60, 80]];
+        // light glow + skirt ring
+        glow(g, c[0], c[1], 170, f);
+        g.fillStyle = 'rgba(0,0,0,0.25)';
+        g.beginPath(); g.arc(c[0] + 5, c[1] + 8, R + 10 + f * 8, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#f4f1ea';
+        g.beginPath(); g.arc(c[0], c[1], R + 10 + f * 8, 0, Math.PI * 2); g.fill();
+        g.fillStyle = RUB;
+        g.beginPath(); g.arc(c[0], c[1], R, 0, Math.PI * 2); g.fill();
+        g.fillStyle = f > 0.15 ? '#fff6cf' : '#7a6a3a';
+        g.shadowColor = ACC; g.shadowBlur = 30 * f;
+        g.beginPath(); g.arc(c[0], c[1], 22, 0, Math.PI * 2); g.fill();
+        g.shadowBlur = 0;
+        ball(g, ...path(T, pts));
+        const n = Math.floor(t / 3.8) * 2 + (T >= hits[0]) + (T >= hits[1]);
+        scoreBox(g, n * 100);
+        hits.forEach((h) => pop(g, '+100', c[0], c[1] - 90, seg(T, h, h + 0.8)));
+        tag(g, 'Hidden switch in the ring', c[0], c[1] + 110, f > 0.3);
+        tag(g, 'LED lights up', c[0] + 110, c[1] - 20, f > 0.3, 'left');
+      },
+    },
+
+    spinner: {
+      period: 4,
+      draw(g, T) {
+        playfield(g);
+        const cx = 400, ay = 200;
+        line(g, cx - 70, 480, cx - 70, 20, CARD_D, 12);
+        line(g, cx + 70, 480, cx + 70, 20, CARD_D, 12);
+        const hit = 0.85, decay = 1.6, total = 4 * Math.PI * 2;
+        const tau = Math.max(0, T - hit);
+        const phi = total * (1 - Math.exp(-decay * tau));
+        let by = lerp(500, -30, seg(T, 0.2, 1.3)), al = T > 1.3 ? 0 : 1;
+        ball(g, cx, by, al);
+        // plate seen at an angle: its height shrinks/flips as it spins
+        const h = 56 * Math.cos(phi);
+        g.fillStyle = h >= 0 ? '#cfd6e0' : '#8a93a3';
+        g.strokeStyle = '#4a5160'; g.lineWidth = 3;
+        g.beginPath(); g.rect(cx - 56, ay, 112, h); g.fill(); g.stroke();
+        line(g, cx - 75, ay, cx + 75, ay, '#5b6270', 5); // wire axle
+        post(g, cx - 75, ay, 7); post(g, cx + 75, ay, 7);
+        const spins = Math.floor(phi / (Math.PI * 2));
+        scoreBox(g, spins * 10);
+        tag(g, 'Flat plate on a wire axle', cx + 100, ay, false, 'left');
+        tag(g, '+10 every spin', cx + 100, ay + 50, tau > 0 && tau < 2.4, 'left');
+      },
+    },
+
+    dropTargets: {
+      period: 4.4,
+      draw(g, T, t) {
+        playfield(g);
+        const xs = [300, 400, 500], hitsAt = [0.6, 1.9, 3.2];
+        const pts = [[0, 400, 470], [0.6, 300, 186], [1.3, 640, 420], [1.9, 400, 186], [2.6, 160, 420], [3.2, 500, 186], [3.8, 400, 470], [4.4, 400, 470]];
+        g.fillStyle = CARD_D; g.fillRect(250, 140, 300, 26); // slot bank
+        xs.forEach((x, i) => {
+          const down = T >= hitsAt[i] ? (T > 3.95 ? 1 - seg(T, 3.95, 4.25) : seg(T, hitsAt[i], hitsAt[i] + 0.12)) : 0;
+          const h = 46 * (1 - down);
+          g.fillStyle = ['#ffd24a', '#7ee8cf', '#ff8a5c'][i];
+          g.strokeStyle = '#1a1b2e'; g.lineWidth = 3;
+          g.beginPath(); g.rect(x - 34, 166 - h, 68, h); g.fill(); if (h > 2) g.stroke();
+          pop(g, '+500', x, 120, seg(T, hitsAt[i], hitsAt[i] + 0.7));
+        });
+        g.fillStyle = '#1a1b2e'; g.fillRect(250, 160, 300, 10);
+        ball(g, ...path(T, pts), T > 3.8 ? 1 - seg(T, 3.8, 4.0) : T < 0.2 ? seg(T, 0, 0.2) : 1);
+        const n = Math.floor(t / 4.4) * 3 + hitsAt.filter((h) => T >= h).length;
+        scoreBox(g, n * 500);
+        if (T > 3.25 && T < 3.95) tag(g, 'Bank cleared! Targets pop back up', 400, 300, true);
+        else tag(g, 'Targets fold down when hit', 400, 300);
+      },
+    },
+
+    ramp: {
+      period: 3.4,
+      draw(g, T) {
+        g.fillStyle = '#1e2036'; g.fillRect(0, 0, W, H);
+        // playfield edge (side view)
+        g.fillStyle = CARD; g.fillRect(0, 440, W, 60);
+        const P0 = [130, 440], P1 = [400, 440], P2 = [560, 180];
+        const bez = (k) => [
+          (1 - k) * (1 - k) * P0[0] + 2 * (1 - k) * k * P1[0] + k * k * P2[0],
+          (1 - k) * (1 - k) * P0[1] + 2 * (1 - k) * k * P1[1] + k * k * P2[1],
+        ];
+        // supports
+        [[330, 410], [470, 300], [560, 180], [650, 180]].forEach(([x, y]) => line(g, x, y + 10, x, 440, CARD_D, 8));
+        g.strokeStyle = CARD; g.lineWidth = 14; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(...P0); g.quadraticCurveTo(...P1, ...P2); g.lineTo(660, 180); g.stroke();
+        g.strokeStyle = CARD_L; g.lineWidth = 4;
+        g.beginPath(); g.moveTo(P0[0], P0[1] - 10); g.quadraticCurveTo(P1[0], P1[1] - 10, P2[0], P2[1] - 10); g.lineTo(660, 170); g.stroke();
+        // return chute
+        g.strokeStyle = '#b8c0cc'; g.lineWidth = 4;
+        g.beginPath(); g.moveTo(665, 196); g.quadraticCurveTo(720, 330, 700, 440); g.stroke();
+        g.beginPath(); g.moveTo(690, 186); g.quadraticCurveTo(750, 330, 728, 440); g.stroke();
+        let b, al = 1;
+        if (T < 0.3) b = [lerp(20, 130, T / 0.3), 426];
+        else if (T < 1.6) { const p = bez(1 - Math.pow(1 - seg(T, 0.3, 1.6), 1.6)); b = [p[0], p[1] - 16]; }
+        else if (T < 2.0) b = [lerp(560, 676, seg(T, 1.6, 2.0)), 164];
+        else if (T < 2.5) { const f = seg(T, 2.0, 2.5); b = [lerp(676, 714, f), lerp(164, 426, f * f)]; }
+        else { b = [lerp(714, 830, seg(T, 2.5, 2.9)), 426]; }
+        if (T > 2.9) al = 0;
+        ball(g, ...b, al);
+        tag(g, 'Ramp: bent cardboard strip', 300, 250, T > 0.3 && T < 1.6);
+        tag(g, 'Support posts', 400, 470 - 4, false);
+        tag(g, 'Return chute (wire or straws)', 620, 80, T > 2 && T < 2.6);
+      },
+    },
+
+    foilSwitch: {
+      period: 3,
+      draw(g, T, t) {
+        playfield(g);
+        const y = 200, xa = 392, xb = 432;
+        line(g, 20, y - 40, 780, y - 40, CARD_D, 8);
+        line(g, 20, y + 40, 780, y + 40, CARD_D, 8);
+        const bx = lerp(60, 760, seg(T, 0.1, 2.6));
+        const closed = bx > xa - 6 && bx < xb + 6;
+        const live = closed ? 1 : 0;
+        // wires: foil A → battery → LED → foil B
+        const wire = closed ? ACC : '#2b2b2b';
+        g.lineJoin = 'round';
+        g.strokeStyle = wire; g.lineWidth = 5;
+        if (closed) { g.setLineDash([14, 10]); g.lineDashOffset = -t * 80; }
+        g.beginPath(); g.moveTo(xa, y + 36); g.lineTo(xa, 330); g.lineTo(230, 330); g.lineTo(230, 380); g.stroke();
+        g.beginPath(); g.moveTo(230, 440); g.lineTo(230, 470); g.lineTo(560, 470); g.lineTo(560, 430); g.stroke();
+        g.beginPath(); g.moveTo(560, 384); g.lineTo(560, 330); g.lineTo(xb, 330); g.lineTo(xb, y + 36); g.stroke();
+        g.setLineDash([]);
+        // foil strips
+        [xa, xb].forEach((x) => {
+          const gr = g.createLinearGradient(x - 8, 0, x + 8, 0);
+          gr.addColorStop(0, '#9aa3b0'); gr.addColorStop(0.5, '#f4f6fa'); gr.addColorStop(1, '#9aa3b0');
+          g.fillStyle = gr; g.fillRect(x - 8, y - 36, 16, 72);
+        });
+        // battery
+        g.fillStyle = '#2b2b2b'; rrect(g, 205, 380, 50, 60, 6); g.fill();
+        g.fillStyle = '#ff8a5c'; g.font = '900 16px Inter'; g.textAlign = 'center'; g.fillText('3V', 230, 412);
+        // LED
+        glow(g, 560, 405, 90, live);
+        g.fillStyle = closed ? '#fff6cf' : '#7a3a3a';
+        g.beginPath(); g.arc(560, 400, 18, Math.PI, 0); g.lineTo(578, 422); g.lineTo(542, 422); g.closePath(); g.fill();
+        ball(g, bx, y);
+        const n = Math.floor(t / 3) + (bx > xb + 6 ? 1 : 0);
+        scoreBox(g, n);
+        tag(g, 'Two strips of foil', 412, 110, !closed && bx < xa);
+        tag(g, 'Metal ball bridges the gap → LED on!', 412, 290, closed);
+        tag(g, 'Battery', 180, 410, false, 'right');
+      },
+    },
+
+    gate: {
+      period: 4,
+      draw(g, T) {
+        g.fillStyle = '#1e2036'; g.fillRect(0, 0, W, H);
+        g.fillStyle = CARD; g.fillRect(0, 390, W, 110);
+        const hx = 400, hy = 240, L = 136;
+        line(g, hx - 30, 140, hx - 30, hy, CARD_D, 10);
+        line(g, hx - 40, hy, hx + 30, hy, CARD_D, 10);
+        // ball 1 goes left → right and pushes through
+        const b1 = lerp(40, 760, seg(T, 0, 1.6));
+        let th = 0;
+        const touch = (bx) => {
+          const dx = bx + 14 - hx;
+          return dx > 0 ? Math.min(1.25, Math.asin(Math.min(1, dx / L)) + 0.12) : 0;
+        };
+        const passAt = 1.6 * (hx + 120 - 40) / 720;
+        if (T < 1.6) th = touch(b1 - 0);
+        if (T >= passAt) { const f = T - passAt, t0 = touch(hx + 120); th = Math.max(0, t0 * Math.exp(-3 * f) * Math.cos(8 * f)); }
+        // ball 2 comes right → left and is blocked
+        let b2 = null;
+        if (T > 2.1) {
+          const s = 2.1, hit = 2.75, stopX = hx + 14 + 6;
+          if (T < hit) b2 = lerp(780, stopX, seg(T, s, hit)); else b2 = lerp(stopX, 780, seg(T, hit, 3.7));
+        }
+        // stop pin
+        post(g, hx - 12, 352, 7);
+        // flap
+        const tip = [hx + L * Math.sin(th), hy + L * Math.cos(th)];
+        line(g, hx, hy, ...tip, '#f4f1ea', 10);
+        g.fillStyle = '#5b6270'; g.beginPath(); g.arc(hx, hy, 7, 0, Math.PI * 2); g.fill();
+        if (T < 1.6) ball(g, b1, 376);
+        if (b2 !== null) ball(g, b2, 376, T > 3.6 ? 1 - seg(T, 3.6, 3.75) : 1);
+        tag(g, 'Swings open this way →', 560, 120, T < 1.6);
+        tag(g, '← but the pin blocks this way', 230, 120, T > 2.5 && T < 3.2);
+        tag(g, 'One-way gate: card flap on a hinge', 400, 455);
+      },
+    },
+
+    tilt: {
+      period: 3.2,
+      draw(g, T) {
+        g.fillStyle = '#1e2036'; g.fillRect(0, 0, W, H);
+        g.fillStyle = '#2a2c48'; g.fillRect(0, 450, W, 50);
+        const F = [110, 360], B = [700, 285];
+        const ang = Math.atan2(B[1] - F[1], B[0] - F[0]);
+        line(g, 140, 360, 140, 450, CARD_D, 10);
+        line(g, 670, 290, 670, 450, CARD_D, 10);
+        g.strokeStyle = CARD; g.lineWidth = 18; g.lineCap = 'butt';
+        g.beginPath(); g.moveTo(...F); g.lineTo(...B); g.stroke();
+        // back wall + backbox
+        line(g, 700, 285, 700, 120, CARD_D, 12);
+        g.fillStyle = '#2b2b4a'; rrect(g, 650, 90, 110, 70, 8); g.fill();
+        g.fillStyle = ACC; g.font = '900 18px Inter'; g.textAlign = 'center'; g.fillText('SCORE', 705, 130);
+        // ball rolls down (speeding up), gets flipped, rolls back up (slowing)
+        const s = Math.pow((T - 1.6) / 1.6, 2);
+        const along = lerp(60, 560, s);
+        const bx = F[0] + Math.cos(ang) * along - Math.sin(ang) * -23;
+        const by = F[1] + Math.sin(ang) * along + Math.cos(ang) * -23;
+        // flipper at the front
+        const fk = T > 1.45 && T < 1.75 ? 1 : 0;
+        g.save(); g.translate(F[0] + 20, F[1] - 10); g.rotate(ang - fk * 0.5);
+        g.fillStyle = '#f4f1ea'; g.strokeStyle = RUB; g.lineWidth = 4;
+        rrect(g, 0, -8, 46, 14, 7); g.fill(); g.stroke();
+        g.restore();
+        ball(g, bx, by);
+        // angle marker
+        g.strokeStyle = 'rgba(255,255,255,0.4)'; g.lineWidth = 2; g.setLineDash([6, 6]);
+        g.beginPath(); g.moveTo(...F); g.lineTo(B[0], F[1]); g.stroke(); g.setLineDash([]);
+        g.strokeStyle = ACC; g.lineWidth = 3;
+        g.beginPath(); g.arc(F[0], F[1], 210, ang, 0); g.stroke();
+        tag(g, 'Tilt it ~6–7°', F[0] + 250, F[1] + 2, false, 'left');
+        tag(g, 'Gravity brings the ball back to you', 400, 50, T > 0.4 && T < 1.5);
+        tag(g, 'Back legs taller', 670, 470 - 6, false);
+      },
+    },
+
+    servoKicker: {
+      period: 3.6,
+      draw(g, T) {
+        playfield(g);
+        const sx = 400, sy = 240;
+        // saucer
+        g.fillStyle = '#3a2614';
+        g.beginPath(); g.arc(sx, sy, 26, 0, Math.PI * 2); g.fill();
+        // Arduino + wires
+        g.fillStyle = '#0e7c86'; rrect(g, 70, 360, 160, 100, 8); g.fill();
+        g.fillStyle = '#e8f6f7'; g.font = '900 18px Inter'; g.textAlign = 'center'; g.fillText('Arduino', 150, 418);
+        const sensing = T > 0.8 && T < 1.75;
+        g.strokeStyle = sensing ? ACC : '#2b2b2b'; g.lineWidth = 4;
+        g.beginPath(); g.moveTo(230, 380); g.lineTo(330, 380); g.lineTo(sx - 30, sy + 30); g.stroke();
+        g.strokeStyle = T > 1.6 && T < 2.0 ? ACC : '#2b2b2b';
+        g.beginPath(); g.moveTo(230, 430); g.lineTo(520, 430); g.lineTo(520, 300); g.stroke();
+        // light sensor next to the saucer
+        glow(g, sx - 34, sy + 34, 40, sensing ? 1 : 0);
+        g.fillStyle = sensing ? '#fff6cf' : '#555';
+        g.beginPath(); g.arc(sx - 34, sy + 34, 8, 0, Math.PI * 2); g.fill();
+        // servo + arm
+        g.fillStyle = '#2b5fd9'; rrect(g, 490, 240, 60, 60, 6); g.fill();
+        const swing = T < 1.6 ? 0 : T < 1.72 ? seg(T, 1.6, 1.72) : T < 2.1 ? 1 : 1 - seg(T, 2.1, 2.5);
+        const arm = lerp(Math.PI * 0.95, Math.PI * 1.25, swing);
+        line(g, 520, 270, 520 + 90 * Math.cos(arm), 270 + 90 * Math.sin(arm), '#f4f1ea', 12);
+        g.fillStyle = '#fff'; g.beginPath(); g.arc(520, 270, 8, 0, Math.PI * 2); g.fill();
+        let b, al = 1;
+        if (T < 0.8) b = [lerp(120, sx, ease(seg(T, 0, 0.8))), lerp(40, sy, ease(seg(T, 0, 0.8)))];
+        else if (T < 1.68) b = [sx, sy];
+        else { const f = T - 1.68; b = [sx - 700 * f, sy - 500 * f]; }
+        if (T < 0.05 || T > 2.4) al = 0;
+        ball(g, ...b, al);
+        tag(g, 'Light sensor sees the ball', sx, sy - 70, sensing && T < 1.6);
+        tag(g, 'Servo kicks it out!', 600, 200, T > 1.6 && T < 2.2, 'left');
+        tag(g, 'Saucer (hole in cardboard)', sx - 50, sy - 10, false, 'right');
+      },
+    },
+  };
+
+  // ================= the loop of cards =================
+  const ANIMS = [
+    { scene: 'plunger', chip: 'Launcher', title: 'Spring plunger',
+      sub: 'Pull back, the spring stores energy, let go and it fires the ball. <b>Try:</b> pen spring, dowel, cardboard tube.' },
+    { scene: 'flipper', chip: 'Flippers', title: 'Push-rod flipper',
+      sub: 'A button through the side wall pushes a lever that spins on a pivot. <b>Try:</b> brass brad, dowel, rubber band.' },
+    { scene: 'popBumper', chip: 'Electronics', title: 'Light-up bumper',
+      sub: 'The ball hits the ring, closes a hidden switch and the LED flashes. <b>Try:</b> foil switch, LED, coin cell.' },
+    { scene: 'rubberBand', chip: 'Launcher', title: 'Rubber-band launcher',
+      sub: 'Two posts, one band, one pull tab. Simple and powerful. <b>Try:</b> pencils, thick rubber bands.' },
+    { scene: 'ramp', chip: 'Features', title: 'Ramp + return chute',
+      sub: 'Make the ball climb, then send it back down another way. <b>Try:</b> scored cardboard strips, straws, wire.' },
+    { scene: 'foilSwitch', chip: 'Electronics', title: 'Foil rollover switch',
+      sub: 'The metal ball connects two foil strips and completes the circuit. <b>Try:</b> foil tape, wires, LED, buzzer.' },
+    { scene: 'slingshot', chip: 'Features', title: 'Slingshot kicker',
+      sub: 'A stretched rubber band bounces the ball off at a new angle. <b>Try:</b> three posts, one band.' },
+    { scene: 'spinner', chip: 'Features', title: 'Spinner',
+      sub: 'A flat plate on an axle that spins when the ball passes under it. <b>Try:</b> paper clip axle, laser-cut plate.' },
+    { scene: 'servoKicker', chip: 'Electronics', title: 'Servo kicker',
+      sub: 'A sensor spots the ball in the hole and a servo flicks it back out. <b>Try:</b> Arduino, micro servo, light sensor.' },
+    { scene: 'dropTargets', chip: 'Features', title: 'Drop targets',
+      sub: 'Knock all three down for a bonus, then they pop back up. <b>Try:</b> hinged card tabs, 3D-printed targets.' },
+    { scene: 'gate', chip: 'Features', title: 'One-way gate',
+      sub: 'A flap that lets the ball through one way only. <b>Try:</b> card flap, paper clip hinge, stop pin.' },
+    { scene: 'tilt', chip: 'Build tip', title: 'Tilt the table',
+      sub: 'Raise the back so gravity always brings the ball back to the flippers.' },
+  ].map((c) => ({ ...c, kind: 'anim', dur: Math.max(7, SCENES[c.scene].period * 2.2) }));
+
+  // Real-world examples (verified links). Filled in below.
+  const MEDIA = [
+    {"kind": "youtube", "chip": "Real build", "title": "Cardboard machine with flippers, castle, and ramps", "id": "C4ZUrli2aOA", "start": 190, "end": 204, "credit": "Video: “DIY Cardboard Pinball Machine” — Sean’s Crafts (YouTube)"},
+    {"kind": "youtube", "chip": "Real build", "title": "Kid plays a PinBox 3000 cardboard pinball kit", "id": "op_dE5V-0BY", "start": 176, "end": 190, "credit": "Video: “PinBox 3000 Review” — Make: (YouTube)"},
+    {"kind": "image", "chip": "Real machine", "title": "See-through pinball machine shows every part inside", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Visible_Pinball_III_-_Pacific_Pinball_Museum_cropped.jpg/1280px-Visible_Pinball_III_-_Pacific_Pinball_Museum_cropped.jpg", "credit": "Photo: Kevin Tiell for the Pacific Pinball Museum (derivative: Sven Manguard) · CC BY-SA 3.0 · Wikimedia Commons"},
+    {"kind": "youtube", "chip": "Real build", "title": "Sixth graders building their own cardboard pinball machines", "id": "1w13MluNpho", "start": 60, "end": 74, "credit": "Video: “Building Pinball Machines at Carroll Middle School” — Northwest Allen County Schools - Official (YouTube)"},
+    {"kind": "youtube", "chip": "Real build", "title": "Finished cardboard machine played with stick flippers", "id": "kLyXSEzyotY", "start": 828, "end": 842, "credit": "Video: “How to make a Pinball Machine with Cardboard at Home” — Mini Gear (YouTube)"},
+    {"kind": "image", "chip": "Flippers", "title": "Real flippers guarding the drain", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Pinball_Flippers_-_Demolition_Man.JPG/1280px-Pinball_Flippers_-_Demolition_Man.JPG", "credit": "Photo: ElHeineken · CC BY 3.0 · Wikimedia Commons"},
+    {"kind": "video", "chip": "Real build", "title": "Giant homemade pinball machine with a 3x6 meter playfield", "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/ea/Giant-Pinball-Galactic-Dimension.webm/Giant-Pinball-Galactic-Dimension.webm.480p.vp9.webm", "credit": "Video: Niklas Roy · CC BY 3.0 · Wikimedia Commons", "start": 8, "dur": 12},
+    {"kind": "youtube", "chip": "Real build", "title": "Cardboard Mario machine with knock-down targets", "id": "p_mSM-zFWM4", "start": 400, "end": 414, "credit": "Video: “DIY Pinball machine Ver.2 Mario How to make tutorial” — Nicoto Studio (YouTube)"},
+    {"kind": "youtube", "chip": "Launcher", "title": "Simple pull-back plunger launcher made from craft supplies", "id": "Rra-ubLeymc", "start": 72, "end": 87, "credit": "Video: “Pinball launcher tutorial” — Tyler Jones (YouTube)"},
+    {"kind": "image", "chip": "Bumpers", "title": "Slingshot: rubber band plus kicker above flipper", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Pinball_Slingshot_-_The_Machine.JPG/1280px-Pinball_Slingshot_-_The_Machine.JPG", "credit": "Photo: ElHeineken · CC BY 3.0 · Wikimedia Commons"},
+    {"kind": "youtube", "chip": "Launcher", "title": "3D-printed launcher arm flicks the ball", "id": "r7c_iTuHRgs", "start": 296, "end": 310, "credit": "Video: “Pinball like you've never seen before.” — 3D Printer Academy (YouTube)"},
+    {"kind": "youtube", "chip": "Launcher", "title": "Solenoid automatic ball launcher fires the ball", "id": "0C0th7GF6Ss", "start": 998, "end": 1012, "credit": "Video: “Building a PINBALL MACHINE  from Scratch! Automatic Ball Launcher - #5” — Daniele Tartaglia (YouTube)"},
+    {"kind": "image", "chip": "Real machine", "title": "Wire ramps carry the ball over the playfield", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Pinball_Wire_Ramp_-_Demolition_Man.JPG/1280px-Pinball_Wire_Ramp_-_Demolition_Man.JPG", "credit": "Photo: ElHeineken · CC BY 3.0 · Wikimedia Commons"},
+    {"kind": "youtube", "chip": "Electronics", "title": "Cardboard and copper-tape switches count points", "id": "jkplTFMUzrQ", "start": 0, "end": 14, "credit": "Video: “I Made Pinball Switches from Cardboard and Conductive Tape” — TechnoChic / Natasha Dzurny (YouTube)"},
+    {"kind": "youtube", "chip": "Electronics", "title": "Lever switch adds points to an LED score counter", "id": "_K40pTUcFXE", "start": 160, "end": 174, "credit": "Video: “Cardboard Pinball Machine with Score Counter  　ダンボールで作るスコアーカウンター付きピンボール・マシン” — Chappy Happy (YouTube)"},
+    {"kind": "image", "chip": "Bumpers", "title": "Labeled targets and pop bumpers on a real playfield", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Pinball_machine_with_explanation.jpg/1280px-Pinball_machine_with_explanation.jpg", "credit": "Photo: Lino Wirag · CC BY-SA 4.0 · Wikimedia Commons"},
+    {"kind": "youtube", "chip": "3D print", "title": "3D-printed glowing bumpers with Arduino scoring", "id": "6DJVVdL0sb0", "start": 72, "end": 86, "credit": "Video: “DIY Tabletop Pinball Bumper with Scoring and Light” — Trial & Errors (YouTube)"},
+    {"kind": "youtube", "chip": "Electronics", "title": "Arduino servo arm lifts the ball back up", "id": "y2FeiB1704w", "start": 40, "end": 54, "credit": "Video: “Wooden Pinball + Arduino DIY (40x40cm mini size)” — Adam (YouTube)"},
+    {"kind": "image", "chip": "Real machine", "title": "Glowing playfield packed with ramps, targets, and lights", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Playfield_of_Star_Wars%E2%80%93Themed_Pinball_Machine.jpg/1280px-Playfield_of_Star_Wars%E2%80%93Themed_Pinball_Machine.jpg", "credit": "Photo: Tessa Bury · CC BY 4.0 · Wikimedia Commons"},
+    {"kind": "video", "chip": "Real machine", "title": "Multiball: several balls in play at once", "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/df/Pinball-multi-ball.webm/Pinball-multi-ball.webm.480p.vp9.webm", "credit": "Video: Myriam Thyes · CC BY-SA 4.0 · Wikimedia Commons", "start": 8, "dur": 12},
+    {"kind": "youtube", "chip": "Electronics", "title": "Homemade spinner: each spin adds to the counter", "id": "Jt8J5jvs1Ns", "start": 28, "end": 42, "credit": "Video: “DIY Pinball Spinner” — Alexandre Siqueira (YouTube)"},
+    {"kind": "youtube", "chip": "Laser cut", "title": "Laser-cut wood machine with copper-tape pop bumpers", "id": "xlxsT34q97c", "start": 62, "end": 76, "credit": "Video: “Arduino Pinball Machine - 3d Printing & Lasercutting” — fluxwood (YouTube)"},
+    {"kind": "image", "chip": "Electronics", "title": "Underside: coils, wires, and switches under the playfield", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Judge_Dredd_Pinball_Machine_underside.jpg/1280px-Judge_Dredd_Pinball_Machine_underside.jpg", "credit": "Photo: Mbrickn · CC BY-SA 4.0 · Wikimedia Commons"},
+    {"kind": "youtube", "chip": "3D print", "title": "3D-printed pop bumper kicks at close range", "id": "zMwTOlSio1s", "start": 0, "end": 12, "credit": "Video: “DIY 3D printed pinball - bumper close up” — >>Fabe<< (YouTube)"},
+    {"kind": "youtube", "chip": "3D print", "title": "3D-printed slingshot kicks the ball away", "id": "eQe4AJX1xyQ", "start": 6, "end": 20, "credit": "Video: “DIY 3D printed pinball - Slingshot close up” — >>Fabe<< (YouTube)"},
+    {"kind": "image", "chip": "History", "title": "Relays and wiring inside an electromechanical cabinet", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Inside_electromechanical_pinball_cabinet.jpg/1280px-Inside_electromechanical_pinball_cabinet.jpg", "credit": "Photo: BPX-web · CC BY-SA 4.0 · Wikimedia Commons"},
+    {"kind": "youtube", "chip": "Bumpers", "title": "Slow-motion pop bumper ring slams the ball", "id": "Tmg5WOvPKpU", "start": 340, "end": 354, "credit": "Video: “How a Pinball Machine works in Slow Motion - The Slow Mo Guys” — The Slow Mo Guys (YouTube)"},
+    {"kind": "youtube", "chip": "Real machine", "title": "Slow-motion slingshot kicks the ball sideways", "id": "jq6nx6it1CE", "start": 70, "end": 84, "credit": "Video: “Pinball in slow motion: slingshots” — Alex V (YouTube)"},
+    {"kind": "image", "chip": "Electronics", "title": "Dot-matrix display shows scores and messages", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Pinball_Dot_Matrix_Display_-_Demolition_Man.JPG/1280px-Pinball_Dot_Matrix_Display_-_Demolition_Man.JPG", "credit": "Photo: ElHeineken · CC BY 3.0 · Wikimedia Commons"},
+    {"kind": "youtube", "chip": "Flippers", "title": "Slow-motion flipper coil and linkage activating", "id": "6kH6ygim7dg", "start": 0, "end": 8, "credit": "Video: “Pinball in slow motion: flipper mechanism” — Alex V (YouTube)"},
+    {"kind": "youtube", "chip": "Real machine", "title": "Ball sweeps a whole bank of drop targets", "id": "M6Q1uZloojc", "start": 54, "end": 68, "credit": "Video: “Sweeping all drop targets in slow motion on Harlem Globetrotters pinball” — Pinball Shenanigans (YouTube)"},
+    {"kind": "image", "chip": "History", "title": "Baffle Ball (1931): early pinball with no flippers", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Baffle_Ball.jpg/1280px-Baffle_Ball.jpg", "credit": "Photo: A7N8X · CC0 · Wikimedia Commons"},
+    {"kind": "video", "chip": "History", "title": "Bally Truck Stop machine in play, with real sounds", "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/8/85/Truck_Stop_Bally_Pinball_Machine.webm/Truck_Stop_Bally_Pinball_Machine.webm.480p.vp9.webm", "credit": "Video: Antti Makkonen / Sounds of Changes, Työväenmuseo Werstas · CC BY 3.0 · Wikimedia Commons", "start": 8, "dur": 12},
+    {"kind": "youtube", "chip": "Real machine", "title": "Pop-up post diverts ball into a magnet", "id": "RUxZ6ffSOWM", "start": 0, "end": 11, "credit": "Video: “Alien Pinball - Magnet & Diverter Tests” — Heighway Pinball (YouTube)"},
+    {"kind": "youtube", "chip": "History", "title": "Exhibit shows each old pinball mechanism working", "id": "yZ1XmdRJcus", "start": 252, "end": 266, "credit": "Video: “These Mechanisms Will Make You Fall In Love With Pinball All over Again” — Make: (YouTube)"},
+    {"kind": "image", "chip": "History", "title": "Fortuna bagatelle board: pins, cups, and a cue", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Fortuna_game_at_Media_museum_Rupriikki.jpg/1280px-Fortuna_game_at_Media_museum_Rupriikki.jpg", "credit": "Photo: Olimar · CC BY-SA 4.0 · Wikimedia Commons"},
+    {"kind": "youtube", "chip": "History", "title": "See-through machine reveals relays, wires, and score reels", "id": "GJ6acL-IhwQ", "start": 6, "end": 20, "credit": "Video: “Inside a Pinball Machine” — WIRED (YouTube)"},
+    {"kind": "youtube", "chip": "History", "title": "1970s flipper coil working under the playfield", "id": "ue-1JoJQaEg", "start": 1668, "end": 1682, "credit": "Video: “Old pinball machines are amazingly complex” — Technology Connections (YouTube)"},
+    {"kind": "image", "chip": "Real machine", "title": "Backglass art and score display on a 1994 machine", "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Striker_pinball_backglass_-Glen_Burnie_MD.jpg/1280px-Striker_pinball_backglass_-Glen_Burnie_MD.jpg", "credit": "Photo: Polylerus · CC0 · Wikimedia Commons"},
+    {"kind": "youtube", "chip": "History", "title": "Antique bagatelle: pinball's pin-and-cup ancestor", "id": "f_WXQXKfL9A", "start": 0, "end": 14, "credit": "Video: “Antique Bagatelle Game” — Jim's Vintage Collectibles (YouTube)"},
+  ];
+
+  // One animated mechanism, then a few real examples, repeat.
+  const CARDS = [];
+  const share = (i) => Math.round((i * MEDIA.length) / ANIMS.length);
+  ANIMS.forEach((a, i) => CARDS.push(a, ...MEDIA.slice(share(i), share(i + 1))));
+
+  const stage = document.getElementById('stage');
+  const layers = [document.getElementById('layerA'), document.getElementById('layerB')];
+  const progress = document.getElementById('progress');
+  const info = document.getElementById('info');
+  const $ = (id) => document.getElementById(id);
+  let idx = -1, front = 0, timer = 0, raf = 0, running = false, cardStart = 0, cardDur = 1;
+
+  function cardDuration(c) {
+    if (c.kind === 'youtube') return Math.min(16, (c.end - c.start)) + 2;
+    if (c.kind === 'video') return c.dur || 10;
+    if (c.kind === 'image') return 7;
+    return c.dur;
+  }
+
+  function mount(layer, c) {
+    layer.innerHTML = '';
+    if (c.kind === 'anim') {
+      const cv = document.createElement('canvas');
+      layer.appendChild(cv);
+      const fit = () => {
+        const r = layer.getBoundingClientRect();
+        cv.width = r.width * devicePixelRatio;
+        cv.height = r.height * devicePixelRatio;
+      };
+      fit();
+      layer._draw = (t) => {
+        if (!cv.width) fit();
+        const g = cv.getContext('2d');
+        const s = Math.max(cv.width / W, cv.height / H);
+        g.setTransform(s, 0, 0, s, (cv.width - W * s) / 2, (cv.height - H * s) / 2);
+        const sc = SCENES[c.scene];
+        g.save();
+        sc.draw(g, t % sc.period, t);
+        g.restore();
+      };
+    } else if (c.kind === 'youtube') {
+      const f = document.createElement('iframe');
+      f.allow = 'autoplay; encrypted-media';
+      f.src = `https://www.youtube-nocookie.com/embed/${c.id}?start=${c.start}&end=${c.end}&autoplay=1&mute=1&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&cc_load_policy=0`;
+      layer.appendChild(f);
+      layer._draw = null;
+    } else if (c.kind === 'video') {
+      const v = document.createElement('video');
+      v.src = c.url + (c.start ? `#t=${c.start}` : ''); v.muted = true; v.autoplay = true; v.loop = true; v.playsInline = true;
+      v.preload = 'auto';
+      v.play().catch(() => {});
+      layer.appendChild(v);
+      layer._draw = null;
+    } else {
+      const im = document.createElement('img');
+      im.src = c.url; im.alt = c.title; im.className = 'kb';
+      im.style.setProperty('--d', cardDuration(c) + 's');
+      layer.appendChild(im);
+      layer._draw = null;
+    }
+  }
+
+  function show(i) {
+    idx = (i + CARDS.length) % CARDS.length;
+    const c = CARDS[idx];
+    const next = layers[1 - front], prev = layers[front];
+    mount(next, c);
+    next.classList.add('on');
+    prev.classList.remove('on');
+    setTimeout(() => { if (!prev.classList.contains('on')) { prev.innerHTML = ''; prev._draw = null; } }, 500);
+    front = 1 - front;
+
+    info.classList.add('out');
+    setTimeout(() => {
+      $('chip').textContent = c.chip;
+      $('title').textContent = c.title;
+      $('sub').innerHTML = c.sub || '';
+      $('credit').textContent = c.credit || '';
+      info.classList.remove('out');
+    }, 300);
+    $('count').textContent = `${idx + 1} / ${CARDS.length}`;
+
+    cardStart = performance.now();
+    cardDur = cardDuration(c);
+    clearTimeout(timer);
+    timer = setTimeout(() => show(idx + 1), cardDur * 1000);
+  }
+
+  function frame(now) {
+    const t = (now - cardStart) / 1000;
+    progress.style.transform = `scaleX(${Math.min(1, t / cardDur)})`;
+    const l = layers[front];
+    if (l._draw) l._draw(t);
+    raf = requestAnimationFrame(frame);
+  }
+
+  function start() {
+    if (running) return;
+    running = true;
+    show(idx < 0 ? 0 : idx + 1);
+    raf = requestAnimationFrame(frame);
+  }
+
+  function stop() {
+    running = false;
+    clearTimeout(timer);
+    cancelAnimationFrame(raf);
+    layers.forEach((l) => { l.innerHTML = ''; l._draw = null; l.classList.remove('on'); });
+  }
+
+  stage.addEventListener('click', () => { if (running) show(idx + 1); else start(); });
+  addEventListener('resize', () => { if (running) { const c = CARDS[idx]; if (c.kind === 'anim') mount(layers[front], c); } });
+
+  // Deck protocol: {deck:'enter'} when this slide comes on screen, {deck:'leave'} when it goes.
+  window.addEventListener('message', (e) => {
+    const d = e.data || {};
+    if (d.deck === 'enter') start();
+    if (d.deck === 'leave') stop();
+  });
+
+  // Opened on its own (not inside the deck): just run.
+  if (window.parent === window) start();
+</script>
+</body>
+</html>
