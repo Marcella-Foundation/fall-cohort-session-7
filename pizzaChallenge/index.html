@@ -278,44 +278,26 @@
     n.connect(hp).connect(ng).connect(master);
     n.start(t); n.stop(t + 0.7);
 
-    // Sad trombone: wah, wah, wah, wahhhh (so close).
-    const NOTES = [
-      { f: 293.66, at: 0.7,  len: 0.42 },
-      { f: 277.18, at: 1.15, len: 0.42 },
-      { f: 261.63, at: 1.6,  len: 0.42 },
-      { f: 246.94, at: 2.05, len: 1.5, wobble: true },
-    ];
-    NOTES.forEach((n) => {
-      const s = t + n.at;
-      const o = ctx.createOscillator();
-      o.type = 'sawtooth';
-      o.frequency.setValueAtTime(n.f * 1.03, s);
-      o.frequency.exponentialRampToValueAtTime(n.f, s + 0.08);
-      if (n.wobble) {
-        o.frequency.exponentialRampToValueAtTime(n.f * 0.94, s + n.len);
-        const vib = ctx.createOscillator();
-        const vibAmt = ctx.createGain();
-        vib.frequency.value = 5.5;
-        vibAmt.gain.setValueAtTime(0, s);
-        vibAmt.gain.linearRampToValueAtTime(9, s + 0.4);
-        vib.connect(vibAmt).connect(o.frequency);
-        vib.start(s); vib.stop(s + n.len + 0.1);
-      }
-      // Muted-brass "wah": the filter opens then closes on each note.
-      const lp = ctx.createBiquadFilter();
-      lp.type = 'lowpass';
-      lp.Q.value = 6;
-      lp.frequency.setValueAtTime(300, s);
-      lp.frequency.linearRampToValueAtTime(1400, s + 0.12);
-      lp.frequency.exponentialRampToValueAtTime(450, s + n.len);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, s);
-      g.gain.linearRampToValueAtTime(0.32, s + 0.05);
-      g.gain.setValueAtTime(0.32, s + n.len - 0.08);
-      g.gain.linearRampToValueAtTime(0, s + n.len);
-      o.connect(lp).connect(g).connect(master);
-      o.start(s); o.stop(s + n.len + 0.05);
-    });
+    // "Almost": soft bell motif that climbs, then hangs on an unresolved chord.
+    const bell = (f, at, len, vol) => {
+      const s = t + at;
+      [[1, vol], [2, vol * 0.25]].forEach(([mult, v]) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = mult === 1 ? 'triangle' : 'sine';
+        o.frequency.value = f * mult;
+        g.gain.setValueAtTime(0, s);
+        g.gain.linearRampToValueAtTime(v, s + 0.015);
+        g.gain.setTargetAtTime(0.0001, s + 0.05, len / 4);
+        o.connect(g).connect(master);
+        o.start(s); o.stop(s + len + 0.1);
+      });
+    };
+    bell(440.00, 0.55, 0.8, 0.22);  // A4
+    bell(587.33, 0.80, 0.8, 0.22);  // D5
+    bell(659.25, 1.05, 0.9, 0.22);  // E5 ...
+    // ...and it stops one step short: a held Dsus2 that never resolves.
+    [293.66, 440.00, 659.25, 880.00].forEach((f) => bell(f, 1.45, 2.6, 0.13));
   }
 
   // ---- last class: suspenseful crawl up to 83% ----
